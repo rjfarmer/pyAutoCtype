@@ -1,6 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct{
+    int a;
+    float b;
+    int *aptr;
+    float *bptr;
+    float **bptrptr;
+} test_struct;
+
 
 int intFunc(int i){
     return 2*i;
