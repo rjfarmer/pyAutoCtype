@@ -118,6 +118,8 @@ class shared(object):
         for i in self.sechead:
             if '.debug_' in i['sh_name']:
                 res[i['sh_name']] = i
+            if '.dwo' in i['sh_name']:
+                raise NoDebugInfo("Split debug info not supported")
         
         if len(res) == 0:
             raise NoDebugInfo("No debug symbols present, recompile with -g")
