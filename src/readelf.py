@@ -183,8 +183,16 @@ class ReadElf(object):
             self._dwarfinfo = self.elffile.get_dwarf_info()
         else:
             self._dwarfinfo = None
+            
+            
+    def getDebugInfo(self):
+        z = self._getDebugInfo()
+        z = self._cleanDebugInfo(z)
+        z = self._processDebugInfo(z)
+        
+        return z
 
-    def _dump_debug_info2(self):
+    def _getDebugInfo(self):
         """ Dump the debugging info section.
         """
         set_global_machine_arch(self.elffile.get_machine_arch())
@@ -218,5 +226,41 @@ class ReadElf(object):
                             attr, die, section_offset).replace('\t','')
                 if die.has_children:
                     die_depth += 1
+        return r
+        
+    def _cleanDebugInfo(self, debug):
+        ''' Matches children to parents and removes them from the top level of the dict '''
+        parent = debug[0]
+        remove = []
+        parent['child'] = []
+        for idx,i in enumerate(debug):
+            if i['depth'] == 1:
+                parent = i
+                parent['child'] = []
+            if i['depth'] == 2:
+                parent['child'].append(i)
+                remove.append(idx)
+        for i in reversed(remove):
+            del debug[i]
 
+        return debug
+        
+    def _processDebugInfo(self, debug):
+        r = {}
+        for i in debug:
+            if 'attr' in i and 'DW_AT_decl_file' in i['attr']:
+                if i['attr']['DW_AT_decl_file'] == '1':
+                    # Things we care about
+                    if 'DW_AT_name' in i['attr']:
+                        n = i['attr']['DW_AT_name'].split(':')[-1].strip()
+                    else:
+                        # make temp name
+                        n = i['offset']
+                    r[n] = i
+                    r[n]['args'] = {}
+                    for j in i['child']:
+                        if 'attr' in j:
+                            [j.pop(k,None) for k in ['depth','DW_AT_name','DW_AT_low_pc','DW_AT_high_pc','DW_AT_frame_base','DW_AT_location']]
+                            r[n]['args'][j['attr']['DW_AT_name']] = j
+                    [r[n].pop(k,None) for k in ['depth','child','DW_AT_name','DW_AT_low_pc','DW_AT_high_pc','DW_AT_frame_base','DW_AT_location']]
         return r
