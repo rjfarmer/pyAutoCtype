@@ -1,10 +1,15 @@
 import struct
 
+_little = {'value':1,'order':'<'}
+_big =  {'value':2,'order':'>'}
+
 class elfstruct(object):
-    def __init__(self,struct):
+    def __init__(self,struct,endiannes=None):
         self._s = struct
         self._bytes = self._s
-        self._endianness = None
+        self._endianness = endiannes
+        if self._endianness is not None:
+            self.set_struct()
         
     def endianness(self, e):
         self._endianness = e
@@ -28,6 +33,7 @@ class elfstruct(object):
                 x=x[0]
             self._bytes[key] = x
             ind = ind + len(value)
+        return self._bytes
     
     def size(self):
         return self.struct.size

@@ -117,11 +117,14 @@ class shared(object):
         res = {}
         for i in self.sechead:
             if '.debug_' in i['sh_name']:
-                res[i['sh_name']] = i
+                res[i['sh_name']] = self.data[i['sh_offset']:i['sh_offset']+i['sh_size']]
             if '.dwo' in i['sh_name']:
                 raise NoDebugInfo("Split debug info not supported")
         
         if len(res) == 0:
             raise NoDebugInfo("No debug symbols present, recompile with -g")
+            
+        if '.stab' in res:
+            raise NoDebugInfo("Only works with dwarf debug symbols")
                 
         return res
