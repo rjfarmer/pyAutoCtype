@@ -28,6 +28,7 @@ typedef struct test_struct3 {
 } test_struct3;
 
 test_struct3 ts3_1;
+test_struct ts1_arr1[5];
 
 union Data{
     int a;
@@ -36,7 +37,7 @@ union Data{
 
 int g_a_int = 1;
 float g_b_float;
-int int_arr[10],int_arr2[10][10];
+int int_arr[10],int_arr2[10][5];
 test_struct2 ts2_1;
 
 const int const_int=5;

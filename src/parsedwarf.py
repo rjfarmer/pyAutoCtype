@@ -110,7 +110,18 @@ def parseType(DIE, child):
             struct = True
 
         if child.tag == 'DW_TAG_array_type':
-            array = True
+            array = []
+            for i in child.iter_children():
+                b = []
+                try:
+                    b.append(i.attributes['DW_AT_lower_bound'].value)
+                except KeyError:
+                    b.append(0)
+                try:
+                    b.append(i.attributes['DW_AT_upper_bound'].value)
+                except KeyError:
+                    b.append(-1)  
+                array.append(b)
 
         if child.tag == 'DW_TAG_const_type':
             const = True
