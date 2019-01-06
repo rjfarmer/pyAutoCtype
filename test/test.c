@@ -9,8 +9,37 @@ typedef struct{
     float **bptrptr;
 } test_struct;
 
+typedef struct{
+    int a2;
+    test_struct b1;
+} test_struct2;
+
+
+// typedef struct test_struct3 test_struct3;
+
+// struct test_struct3{
+//     int a3;
+//     test_struct3 *b1;
+// };
+
+typedef struct test_struct3 {
+    int a3;
+    struct test_struct3 *b1;
+} test_struct3;
+
+test_struct3 ts3_1;
+
+union Data{
+    int a;
+    float b;
+} test_union;
+
 int g_a_int = 1;
 float g_b_float;
+int int_arr[10],int_arr2[10][10];
+test_struct2 ts2_1;
+
+const int const_int=5;
 
 #define MYDEF 1;
 
@@ -33,4 +62,12 @@ float floatFunc2(float i4, float j4){
 
 float structFunc1(test_struct i5){
     return i5.b + 5.0;
+}
+
+float floatptrFunc1(float * i5){
+    return *i5;
+}
+
+float structFunc2(test_struct * i5){
+    return (*i5).b + 5.0;
 }
