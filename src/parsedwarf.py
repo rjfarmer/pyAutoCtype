@@ -28,12 +28,11 @@ def listDIES2(DIE):
 
 
 def process_file(filename):
-    print('Processing file:', filename)
+    #print('Processing file:', filename)
     with open(filename, 'rb') as f:
         elffile = ELFFile(f)
         if not elffile.has_dwarf_info():
-            print('  file has no DWARF info')
-            return
+            raise ValueError(filename + ' has no DWARF info')
         # get_dwarf_info returns a DWARFInfo context object, which is the
         # starting point for all DWARF-based processing in pyelftools.
         dwarfinfo = elffile.get_dwarf_info()
@@ -46,8 +45,6 @@ def process_file(filename):
             for DIE in CU.iter_DIEs():
                 alldies[DIE.offset] = DIE
     return alldies
-    
-DIE =  process_file('../test/libtester.so')
     
 def getAttr(DIE):
     res = OrderedDict()
@@ -139,7 +136,7 @@ def parseType(DIE, child):
             break
 
 
-    output = {'name':name,
+    output = {'type':name,
             'ptrs':num_ptrs,
             'size':size,
             'struct':struct,
@@ -178,14 +175,14 @@ def parseDIE(DIEs):
         if value.tag in bt:
             x = getAttr(value)
             base_type[x['offset']] = x
-            base_type[x['offset']]['def'] = parseType(DIE, value)
+            base_type[x['offset']]['def'] = parseType(DIEs, value)
         if value.tag in bt2:
             x = getAttr(value)
             n = x['name']
             structs[n] = x   
             structs[n]['args'] = OrderedDict()    
             base_type[x['offset']] = x
-            base_type[x['offset']]['def'] = parseType(DIE, value)
+            base_type[x['offset']]['def'] = parseType(DIEs, value)
             # Get the definition:
             try:
                 st = DIEs[value.attributes['DW_AT_type'].value]
@@ -199,11 +196,26 @@ def parseDIE(DIEs):
     var = parseBT(base_type,var)
     funcs = parseBT(base_type, funcs)
     structs = parseBT(base_type,structs)
-                
-    return funcs, var, base_type, structs
 
+    #Clean dicts
+    var = cleanDict(var)
+    funcs = cleanDict(funcs)
+    structs = cleanDict(structs)
+ 
+    return {'funcs':funcs, 'var':var, 'structs':structs}
 
-funcs, var, base_type, structs = parseDIE(DIE)
+def cleanDict(x):
+    for k in list(x.keys()):
+        if k in ['offset','type_num','name']:
+            del x[k]
+            continue
+        if isinstance(x[k],dict):
+            x[k] = cleanDict(x[k])
+    return x
+
+def parseDwarf(filename):
+    DIEs =  process_file(filename)
+    return parseDIE(DIEs)
 
 
 

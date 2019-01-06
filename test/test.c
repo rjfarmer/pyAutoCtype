@@ -41,6 +41,7 @@ int int_arr[10],int_arr2[10][5];
 test_struct2 ts2_1;
 
 const int const_int=5;
+const float pi=3.14;
 
 #define MYDEF 1;
 
