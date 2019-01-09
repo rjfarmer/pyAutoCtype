@@ -26,8 +26,7 @@ setup(name='pyAutoCtype',
       classifiers=[
 			"Development Status :: 3 - Alpha",
 			"License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
-		    'Topic :: Software Development :: Code Generators',
-		    
+		    'Topic :: Software Development :: Code Generators'
       ],
-      test_suite = 'tests',
+      test_suite = 'tests'
      )
