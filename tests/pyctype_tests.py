@@ -23,7 +23,7 @@ except ImportError:
 
 os.chdir('tests')
 subprocess.check_output(["make"])
-x=pyc.cwrap('../test/libtester.so')
+x=pyc.cwrap('./libtester.so')
 
 
 @contextmanager
@@ -46,7 +46,7 @@ def captured_output():
 
 class TestStringMethods(unittest.TestCase):
     def test_mising_var(self):	
-        with self.assertRaises(AttributeError) as cm:
+        with self.assertRaises(KeyError) as cm:
             a=x.invalid_var.get()
 
     def test_global_int(self):

@@ -1,6 +1,6 @@
 import ctypes
 import numpy as np
-import parsedwarf as pd
+from .parsedwarf import parseDwarf
 
 
 _dictCTypes = {
@@ -20,7 +20,7 @@ _dictCTypes = {
         ('double',4): ctypes.c_double,
         
         ('_Bool',1): ctypes.c_bool,
-        ('char',1): ctypes.c_char
+        ('char',1): ctypes.c_char,
         }
 
 
@@ -29,7 +29,7 @@ class cwrap(object):
         self.filename = filename
         self._lib = ctypes.CDLL(filename)
 
-        x = pd.parseDwarf('../test/libtester.so')
+        x = parseDwarf(filename)
         self._funcs = x['funcs']
         self._var = x['var']
         self._structs = x['structs']
