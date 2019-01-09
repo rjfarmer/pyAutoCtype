@@ -7,6 +7,9 @@ __pycache__/
 *.so
 *.o
 *.gch
+*.mod
+*.so
+*.a
 
 # Distribution / packaging
 .Python
