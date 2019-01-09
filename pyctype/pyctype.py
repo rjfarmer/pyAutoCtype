@@ -112,6 +112,10 @@ class cvar(object):
             else:
                 self._ctype.in_dll(self.lib, self.name).value = value
 
+
+    def __repr__(self):
+        return str(self.get())
+
 class cfunc(object):
     def __init__(self, lib, func, name):
         self.lib = lib
