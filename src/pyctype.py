@@ -87,13 +87,30 @@ class cvar(object):
         self._ctype = makeCType(self.var)
 
     def get(self):
-        return self._ctype.in_dll(self.lib, self.name).value
+        x = self._ctype.in_dll(self.lib, self.name)
+        if x is None:
+            return None
+
+        if hasattr(x,'value'):
+            return self._ctype.in_dll(self.lib, self.name).value
+        else:
+            while True:
+                try:
+                    x = x.contents
+                except AttributeError:
+                    break
+            return x.value
 
     def set(self, value):
         if self.var['const']:
             raise AttributeError('Cant set const variable')
         else:
-            self._ctype.in_dll(self.lib, self.name).value = value
+            if hasattr(self._ctype,'contents'):
+                t = makeCType(self.var,False)
+                print(t,t(value))
+                self._ctype(t(value))
+            else:
+                self._ctype.in_dll(self.lib, self.name).value = value
 
 class cfunc(object):
     def __init__(self, lib, func, name):
@@ -106,10 +123,14 @@ class cfunc(object):
         return getattr(self.lib, self.name)
 
 
-def makeCType(x):
+def makeCType(x,ptrs=True):
     try:
         res = _dictCTypes[(x['type'],x['size'])]
     except KeyError:
         res = None
+
+    if ptrs:
+        for i in range(x['ptrs']):
+            res = ctypes.POINTER(res)
 
     return res

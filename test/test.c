@@ -36,7 +36,9 @@ union Data{
 } test_union;
 
 int g_a_int = 1;
+float b_float = 5;
 float g_b_float;
+float *p_b_float, **p2_b_float;
 int int_arr[10],int_arr2[10][5];
 test_struct2 ts2_1;
 
@@ -44,6 +46,12 @@ const int const_int=5;
 const float pi=3.14;
 
 #define MYDEF 1;
+
+
+void setpPtr(){
+    p_b_float = &b_float;
+    p2_b_float = &p_b_float;
+}
 
 
 int intFunc1(int i1){
