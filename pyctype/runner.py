@@ -1,8 +1,6 @@
 import pyctype as pyc
+import ctypes
 
+x=pyc.cwrap('./tests/libtester.so')
 
-x=pyc.cwrap('../test/libtester.so')
-
-x.p_b_float = 1.0
-
-x.p_b_float
+x.setpPtr()

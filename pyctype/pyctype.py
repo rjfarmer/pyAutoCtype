@@ -120,18 +120,31 @@ class cfunc(object):
     def __init__(self, lib, func, name):
         self.lib = lib
         self.name = name
-        self.func = func['def']
+        try:
+            self.func = func['def']
+        except KeyError:
+            self.func = None
         self._init = True
 
     def get(self):
-        return getattr(self.lib, self.name)
+        if '_func' not in self.__dict__:
+            self._func = getattr(self.lib, self.name)
+            try:
+                self._func.restype = makeCType(self.func) 
+            except KeyError:
+                self._func.restype = None
+        return self._func
+
+    def __call__(self,*args):
+        self.get()(*args)
+
 
 
 def makeCType(x,ptrs=True):
     try:
         res = _dictCTypes[(x['type'],x['size'])]
-    except KeyError:
-        res = None
+    except (KeyError, TypeError):
+        return None
 
     if ptrs:
         for i in range(x['ptrs']):
