@@ -1,4 +1,4 @@
-language: python c
+language: python 
 python:
   - "2.6"
   - "2.7"
@@ -10,7 +10,6 @@ python:
   - "3.6-dev"  # 3.6 development branch
   - "3.7-dev"  # 3.7 development branch
 install: 
-  - make get-deps
   - pip install -r requirements.txt
   - python setup.py install
 # command to run tests
