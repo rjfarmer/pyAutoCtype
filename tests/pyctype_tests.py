@@ -67,6 +67,19 @@ class TestStringMethods(unittest.TestCase):
     def test_call_float_func(self):
         self.assertEqual(x.floatFuncNoArgs(),99.0)    
 
+    def test_call_int_func1(self):
+        self.assertEqual(x.intFunc1(5),10) 
+
+    def test_call_int_func2(self):
+        self.assertEqual(x.intFunc2(5,6),11)   
+
+    def test_call_float_func1(self):
+        self.assertEqual(x.floatFunc1(20.0),40.0)   
+
+    def test_call_float_func2(self):
+        y = x.floatFunc2(3.14,5.76)
+        self.assertEqual(round(y,1),8.9)           
+
 
 if __name__ == '__main__':
 	unittest.main() 

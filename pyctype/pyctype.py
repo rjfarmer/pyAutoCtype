@@ -124,6 +124,8 @@ class cfunc(object):
             self.func = func['def']
         except KeyError:
             self.func = None
+        self._args = func['args']
+
         self._init = True
 
     def get(self):
@@ -133,6 +135,12 @@ class cfunc(object):
                 self._func.restype = makeCType(self.func) 
             except KeyError:
                 self._func.restype = None
+
+            # Set argtypes
+            self._ctype_args = [makeCType(value['def']) for key, value in self._args.items()]
+            self._func.argtypes = self._ctype_args
+
+
         return self._func
 
     def __call__(self,*args):

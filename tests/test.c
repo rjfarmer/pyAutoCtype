@@ -62,7 +62,7 @@ int intFunc1(int i1){
 }
 
 int intFunc2(int i2, int j2){
-    return i2+j2 + g_a_int + MYDEF;
+    return i2+j2;
 }
 
 int floatFuncNoArgs(){
