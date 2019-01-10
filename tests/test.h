@@ -3,6 +3,8 @@
 
 int intFunc(int i);
 int intFunc2(int i, int j);
+int intFuncNoArgs();
+float floatFuncNoArgs();
 float floatFunc(float i);
 float floatFunc2(float i, float j);
 float structFunc1(test_struct i5);

@@ -63,6 +63,12 @@ class TestStringMethods(unittest.TestCase):
     def test_call_void_func(self):
         x.setpPtr()
 
+    def test_call_int_func(self):
+        self.assertEqual(x.intFuncNoArgs(),42)
+
+    def test_call_float_func(self):
+        self.assertEqual(x.floatFuncNoArgs(),99.0)    
+
 
 if __name__ == '__main__':
 	unittest.main() 

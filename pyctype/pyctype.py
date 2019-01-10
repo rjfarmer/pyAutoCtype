@@ -136,7 +136,10 @@ class cfunc(object):
         return self._func
 
     def __call__(self,*args):
-        self.get()(*args)
+        if '_func' not in self.__dict__:
+            self.get()
+
+        return self._func(*args)
 
 
 

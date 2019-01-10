@@ -53,6 +53,9 @@ void setpPtr(){
     p2_b_float = &p_b_float;
 }
 
+int intFuncNoArgs(){
+    return 42;
+}
 
 int intFunc1(int i1){
     return 2*i1;
@@ -60,6 +63,10 @@ int intFunc1(int i1){
 
 int intFunc2(int i2, int j2){
     return i2+j2 + g_a_int + MYDEF;
+}
+
+int floatFuncNoArgs(){
+    return 99.0;
 }
 
 float floatFunc1(float i3){
