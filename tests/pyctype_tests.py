@@ -60,7 +60,7 @@ class TestStringMethods(unittest.TestCase):
         x.g_a_int = 99
         self.assertEqual(x.g_a_int.get(),99)   
 
-    def test_call_void_func(self)
+    def test_call_void_func(self):
         x.setpPtr()
 
 
