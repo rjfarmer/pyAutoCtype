@@ -5,10 +5,8 @@ os.environ["_PYAUTOCTYPE_TEST_FLAG"] = "1"
 import numpy as np
 import pyctype as pyc
 
-try:
-    import unittest as unittest
-except ImportError:
-    import unittest2 as unittest
+
+import unittest
     
 import subprocess
 import numpy.testing as np_test
