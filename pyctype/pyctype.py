@@ -86,7 +86,8 @@ class cvar(object):
         self._init = True
         self._ctype = makeCType(self.var)
 
-    def get(self):
+    @property
+    def value(self):
         x = self._ctype.in_dll(self.lib, self.name)
         if x is None:
             return None
@@ -114,7 +115,141 @@ class cvar(object):
 
 
     def __repr__(self):
-        return str(self.get())
+        return str(self.value)
+
+    def __str__(self):
+        return str(self.value)
+
+    def __add__(self, other):
+        return getattr(self.value, '__add__')(other)
+
+    def __sub__(self, other):
+        return getattr(self.value, '__sub__')(other)
+
+    def __mul__(self, other):
+        return getattr(self.value, '__mul__')(other)
+
+    def __matmul__(self,other):
+        return getattr(self.value, '__matmul__')(other)
+
+    def __truediv__(self, other):
+        return getattr(self.value, '__truediv__')(other)
+        
+    def __floordiv__(self,other):
+        return getattr(self.value, '__floordiv__')(other)
+
+    def __pow__(self, other, modulo=None):
+        return getattr(self.value, '__pow__')(other,modulo)
+
+    def __mod__(self,other):
+        return getattr(self.value, '__mod__')(other)        
+        
+    def __lshift__(self,other):
+        return getattr(self.value, '__lshift__')(other)        
+
+    def __rshift__(self,other):
+        return getattr(self.value, '__rshift__')(other)
+
+    def __and__(self,other):
+        return getattr(self.value, '__and__')(other)
+        
+    def __xor__(self,other):
+        return getattr(self.value, '__xor__')(other)
+        
+    def __or__(self,other):
+        return getattr(self.value, '__or__')(other)
+        
+    def __radd__(self, other):
+        return getattr(self.value, '__radd__')(other)
+
+    def __rsub__(self, other):
+        return getattr(self.value, '__rsub__')(other)
+
+    def __rmul__(self, other):
+        return getattr(self.value, '__rmul__')(other)
+
+    def __rmatmul__(self,other):
+        return getattr(self.value, '__rmatmul__')(other)
+
+    def __rtruediv__(self, other):
+        return getattr(self.value, '__rtruediv__')(other)
+        
+    def __rfloordiv__(self,other):
+        return getattr(self.value, '__rfloordiv__')(other)
+
+    def __rpow__(self, other):
+        return getattr(self.value, '__rpow__')(other)
+
+    def __rmod__(self,other):
+        return getattr(self.value, '__rmod__')(other)        
+        
+    def __rlshift__(self,other):
+        return getattr(self.value, '__rlshift__')(other)        
+
+    def __rrshift__(self,other):
+        return getattr(self.value, '__rrshift__')(other)
+
+    def __rand__(self,other):
+        return getattr(self.value, '__rand__')(other)
+        
+    def __rxor__(self,other):
+        return getattr(self.value, '__rxor__')(other)
+        
+    def __ror__(self,other):
+        return getattr(self.value, '__ror__')(other)
+
+    def __iadd__(self, other):
+        self.set(self.value + other)
+        return self.value
+
+    def __isub__(self, other):
+        self.set(self.value - other)
+        return self.value
+
+    def __imul__(self, other):
+        self.set(self.value * other)
+        return self.value
+
+    def __itruediv__(self, other):
+        self.set(self.value / other)
+        return self.value
+
+    def __ipow__(self, other, modulo=None):
+        x = self.value**other
+        if modulo:
+            x = x % modulo
+        self.set(x)
+        return self.value
+
+    def __eq__(self, other):
+        return getattr(self.value, '__eq__')(other)
+
+    def __neq__(self, other):
+        return getattr(self.value, '__new__')(other)
+
+    def __lt__(self, other):
+        return getattr(self.value, '__lt__')(other)
+
+    def __le__(self, other):
+        return getattr(self.value, '__le__')(other)
+
+    def __gt__(self, other):
+        return getattr(self.value, '__gt__')(other)
+
+    def __ge__(self, other):
+        return getattr(self.value, '__ge__')(other)
+        
+    def __format__(self, other):
+        return getattr(self.value, '__format__')(other)
+  
+    def __bytes__(self):
+        return getattr(self.value, '__bytes__')()  
+        
+    def __bool__(self):
+        return getattr(self.value, '__bool__')()
+   
+    def __len__(self):
+        return getattr(self.value, '__len__')()
 
 class cfunc(object):
     def __init__(self, lib, func, name):
@@ -126,9 +261,7 @@ class cfunc(object):
             self.func = None
         self._args = func['args']
 
-        self._init = True
-
-    def get(self):
+    def _init(self):
         if '_func' not in self.__dict__:
             self._func = getattr(self.lib, self.name)
             try:
@@ -145,7 +278,7 @@ class cfunc(object):
 
     def __call__(self,*args):
         if '_func' not in self.__dict__:
-            self.get()
+            self._init()
 
         return self._func(*args)
 

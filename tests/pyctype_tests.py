@@ -45,10 +45,10 @@ def captured_output():
 class TestStringMethods(unittest.TestCase):
     def test_mising_var(self):	
         with self.assertRaises(KeyError) as cm:
-            a=x.invalid_var.get()
+            a=x.invalid_var.value
 
     def test_global_int(self):
-        self.assertEqual(x.const_int.get(),5)
+        self.assertEqual(x.const_int,5)
 
     def test_global_const_int_set(self):
         with self.assertRaises(AttributeError) as cm:
@@ -56,7 +56,7 @@ class TestStringMethods(unittest.TestCase):
 
     def test_global_int_set(self):
         x.g_a_int = 99
-        self.assertEqual(x.g_a_int.get(),99)   
+        self.assertEqual(x.g_a_int,99)   
 
     def test_call_void_func(self):
         x.setpPtr()
