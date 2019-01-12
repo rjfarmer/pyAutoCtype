@@ -244,7 +244,7 @@ class cvar(object):
         return self.value == other
 
     def __neq__(self, other):
-        return getattr(self.value, '__new__')(other)
+        return self.value != other
 
     def __lt__(self, other):
         return getattr(self.value, '__lt__')(other)
