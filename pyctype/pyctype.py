@@ -17,10 +17,29 @@ _dictCTypes = {
         ('float',4): ctypes.c_float,
         
         ('float',8): ctypes.c_double,
-        ('double',4): ctypes.c_double,
+        ('double',8): ctypes.c_double,
         
         ('_Bool',1): ctypes.c_bool,
         ('char',1): ctypes.c_char,
+        }
+
+_dictNpTypes = {
+        ('int',1): np.dtype('i1'),
+        ('int',2): np.dtype('i2'),
+        ('int',4): np.dtype('i4'),
+        ('int',8): np.dtype('i8'),
+
+        ('unsigned int',1): np.dtype('u1'),
+        ('unsigned int',2): np.dtype('u2'),
+        ('unsigned int',4): np.dtype('u4'),
+        ('unsigned int',8): np.dtype('u8'),
+
+        ('float',4): np.dtype('f4'),
+        
+        ('float',8): np.dtype('f8'),
+        ('double',8): np.dtype('f8'),
+        
+        ('_Bool',1): np.dtype('?'),
         }
 
 
@@ -289,6 +308,14 @@ def makeCType(x,ptrs=True):
         res = _dictCTypes[(x['type'],x['size'])]
     except (KeyError, TypeError):
         return None
+
+    if x['array']:
+        dtype = _dictNpTypes[(x['type'],x['size'])]
+        arr_len = len(x['array'])
+        arr_shape = tuple([j-i+1 for i,j in x['array']])
+        res = np.ctypeslib.ndpointer(dtype=dtype,
+                ndim=arr_len,shape=arr_shape,flags='C')
+        return res
 
     if ptrs:
         for i in range(x['ptrs']):
