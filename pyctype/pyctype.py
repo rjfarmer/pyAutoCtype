@@ -222,7 +222,7 @@ class cvar(object):
         return self.value
 
     def __eq__(self, other):
-        return getattr(self.value, '__eq__')(other)
+        return self.value == other
 
     def __neq__(self, other):
         return getattr(self.value, '__new__')(other)
