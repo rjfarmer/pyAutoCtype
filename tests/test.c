@@ -42,6 +42,9 @@ float *p_b_float, **p2_b_float;
 int int_arr[10],int_arr2[10][5];
 test_struct2 ts2_1;
 
+
+test_struct ts1_1;
+
 const int const_int=5;
 const float pi=3.14;
 
@@ -88,3 +91,16 @@ float floatptrFunc1(float * i5){
 float structFunc2(test_struct * i5){
     return (*i5).b + 5.0;
 }
+
+
+int setStructS1(){
+    ts1_1.a = 1;
+    ts1_1.b = 5.0;
+    return ts1_1.a;
+}
+
+int checkStructS1(){
+    if (ts1_1.a == 3) return 1;
+    else return 0;
+}
+

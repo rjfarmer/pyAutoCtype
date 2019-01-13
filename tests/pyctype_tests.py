@@ -80,6 +80,26 @@ class TestStringMethods(unittest.TestCase):
         y = x.floatFunc2(3.14,5.76)
         self.assertEqual(round(y,1),8.9)           
 
+    def test_global_array_1d(self):
+        y = x.int_arr
+
+    def test_setStructS1(self):
+        y = x.setStructS1()
+        self.assertEqual(y,1)
+
+        z = x.ts1_1
+        self.assertTrue('a' in z)
+
+        self.assertEqual(z['a'], 1)
+
+        y = x.checkStructS1()
+        self.assertEqual(y, 0)
+
+        z['a'] = 3
+        y = x.checkStructS1()
+        self.assertEqual(y, 1)        
+
+
 
 if __name__ == '__main__':
 	unittest.main() 

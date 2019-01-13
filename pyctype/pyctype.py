@@ -42,9 +42,14 @@ _dictNpTypes = {
         ('_Bool',1): np.dtype('?'),
         }
 
+#Holds the ctypes
+_allStructs = {}
+_allStructsBase = {}
+
 
 class cwrap(object):
     def __init__(self, filename):
+        global _allStructsBase
         self.filename = filename
         self._lib = ctypes.CDLL(filename)
 
@@ -52,7 +57,7 @@ class cwrap(object):
         self._funcs = x['funcs']
         self._var = x['var']
         self._structs = x['structs']
-
+        _allStructsBase = x['structs']
 
     def __dir__(self):
         return list(self._var.keys()) + list(self._funcs.keys())
@@ -77,7 +82,8 @@ class cwrap(object):
         else:
             if '_var'  in self.__dict__ and name in self._var:
                 self._init_var(name)
-                return self._var[name]
+                return self._var[name].value
+
             elif '_funcs'  in self.__dict__ and name in self._funcs:
                 self._init_func(name)
                 return self._funcs[name]
@@ -111,8 +117,11 @@ class cvar(object):
         if x is None:
             return None
 
+        if self.var['struct']:
+            return cstruct(x, _allStructsBase[self.var['type']])
+
         if hasattr(x,'value'):
-            return self._ctype.in_dll(self.lib, self.name).value
+            return x.value
         else:
             while True:
                 try:
@@ -127,7 +136,6 @@ class cvar(object):
         else:
             if hasattr(self._ctype,'contents'):
                 t = makeCType(self.var,False)
-                print(t,t(value))
                 self._ctype(t(value))
             else:
                 self._ctype.in_dll(self.lib, self.name).value = value
@@ -315,10 +323,16 @@ class cfunc(object):
 
 
 def makeCType(x,ptrs=True):
+    res = None
     try:
         res = _dictCTypes[(x['type'],x['size'])]
-    except (KeyError, TypeError):
+    except TypeError:
         return None
+    except KeyError:
+        pass
+
+    if x['struct']:
+        return makeStruct(x)
 
     if x['array']:
         dtype = _dictNpTypes[(x['type'],x['size'])]
@@ -333,3 +347,56 @@ def makeCType(x,ptrs=True):
             res = ctypes.POINTER(res)
 
     return res
+
+
+def makeStruct(x):
+
+    if x['type'] in _allStructs:
+        return _allStructs[x['type']]
+
+    # Make structure 
+    class struct(ctypes.Structure):
+        pass
+
+    # Put empty one in, first in case we have nested structs
+    _allStructs[x['type']] = struct
+
+    # Struct members
+    args = _allStructsBase[x['type']]['args']
+    _fields_ = []
+    for k,v in args.items():
+        _fields_.append((k,makeCType(v['def'])))
+    
+    struct._fields_ = _fields_
+
+    # Update now its set
+    _allStructs[x['struct']] = struct
+
+    return struct
+
+
+class cstruct(object):
+    def __init__(self, struct, structType):
+        self.struct = struct
+        self.structType = structType
+
+    def keys(self):
+        return self.structType['args'].keys()
+    
+    def __getitem__(self, key):
+        if not key in self.keys():
+            raise KeyError
+        
+        return getattr(self.struct, key)
+
+    def __setitem__(self, key, value):
+        if not key in self.keys():
+            raise KeyError
+        
+        setattr(self.struct, key, value)
+
+    def __iter__(self):
+        return self.structType['args'].keys()
+
+    def __contains__(self, key):
+        return key in self.structType['args'].keys()

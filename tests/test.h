@@ -10,3 +10,4 @@ float floatFunc2(float i, float j);
 float structFunc1(test_struct i5);
 float floatptrFunc1(float * i5);
 float structFunc2(test_struct * i5);
+int setStructS1();
