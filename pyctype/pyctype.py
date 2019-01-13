@@ -123,7 +123,7 @@ class cvar(object):
 
     def set(self, value):
         if self.var['const']:
-            raise AttributeError('Cant set const variable')
+            raise AttributeError('Can not set const variable')
         else:
             if hasattr(self._ctype,'contents'):
                 t = makeCType(self.var,False)
@@ -132,6 +132,17 @@ class cvar(object):
             else:
                 self._ctype.in_dll(self.lib, self.name).value = value
 
+    def from_param(self,obj):
+        return self._ctype(obj)
+
+    def from_address(self, address):
+        return self._ctype.from_address(address)
+
+    def from_buffer(self, source, offset=0):
+        return self._ctype.from_buffer(source, offset)
+
+    def from_buffer_copy(self, source, offset=0):
+        return self._ctype.from_buffer_copy(source, offset)
 
     def __repr__(self):
         return str(self.value)
