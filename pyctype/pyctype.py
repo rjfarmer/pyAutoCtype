@@ -42,10 +42,8 @@ _dictNpTypes = {
         ('_Bool',1): np.dtype('?'),
         }
 
-#Holds the ctypes
 _allStructs = {}
 _allStructsBase = {}
-
 
 class cwrap(object):
     def __init__(self, filename):
@@ -60,7 +58,7 @@ class cwrap(object):
         _allStructsBase = x['structs']
 
     def __dir__(self):
-        return list(self._var.keys()) + list(self._funcs.keys())
+        return list(self._var.keys()) + list(self._funcs.keys()) + list(self._structs.keys()) 
 
     def _init_var(self, name):
         if hasattr(self._var[name],'_init'):
@@ -76,17 +74,30 @@ class cwrap(object):
         self._funcs[name] = cfunc(self._lib, self._funcs[name], name)
 
 
+    def _init_struct(self, name):
+        if not name in _allStructs:
+            _allStructs[name] = cstruct(name, self._structs[name])
+
+        self._structs[name] = _allStructs[name]
+
+    def list_structs(self):
+        return self._structs.keys()
+
     def __getattr__(self, name):
         if name in self.__dict__:
             return self.__dict__[name]
         else:
-            if '_var'  in self.__dict__ and name in self._var:
+            if '_var' in self.__dict__ and name in self._var:
                 self._init_var(name)
                 return self._var[name].value
 
-            elif '_funcs'  in self.__dict__ and name in self._funcs:
+            elif '_funcs' in self.__dict__ and name in self._funcs:
                 self._init_func(name)
                 return self._funcs[name]
+
+            elif '_structs' in self.__dict__ and name in self._structs:
+                self._init_struct(name)
+                return self._structs[name]
         
         return self.__dict__[name]
 
@@ -98,6 +109,10 @@ class cwrap(object):
             if '_var'  in self.__dict__ and name in self._var:
                 self._init_var(name)
                 self._var[name].set(value)
+                return
+            elif '_structs' in self.__dict__ and name in self._structs:
+                self._init_struct(name)
+                self._struct[name].set(value)
                 return
         
         self.__dict__[name] = value
@@ -117,9 +132,6 @@ class cvar(object):
         if x is None:
             return None
 
-        if self.var['struct']:
-            return cstruct(x, _allStructsBase[self.var['type']])
-
         if hasattr(x,'value'):
             return x.value
         else:
@@ -128,7 +140,10 @@ class cvar(object):
                     x = x.contents
                 except AttributeError:
                     break
-            return x.value
+            if hasattr(x,'value'):
+                return x.value
+            else:
+                return x
 
     def set(self, value):
         if self.var['const']:
@@ -332,7 +347,12 @@ def makeCType(x,ptrs=True):
         pass
 
     if x['struct']:
-        return makeStruct(x)
+        name = x['type']
+        if name in _allStructs:
+            return _allStructs[name]
+        else:
+            _allStructs[name] = cstruct(name,_allStructsBase[name])
+            res = _allStructs[name]
 
     if x['array']:
         dtype = _dictNpTypes[(x['type'],x['size'])]
@@ -349,54 +369,89 @@ def makeCType(x,ptrs=True):
     return res
 
 
-def makeStruct(x):
+class cstruct(ctypes.Structure):
+    def __init__(self, name, structType):
+        self._name = name
+        self._structType = structType
+        self._value = self._makeStruct()
 
-    if x['type'] in _allStructs:
-        return _allStructs[x['type']]
+        self._as_parameter_ = self._value()
 
-    # Make structure 
-    class struct(ctypes.Structure):
-        pass
-
-    # Put empty one in, first in case we have nested structs
-    _allStructs[x['type']] = struct
-
-    # Struct members
-    args = _allStructsBase[x['type']]['args']
-    _fields_ = []
-    for k,v in args.items():
-        _fields_.append((k,makeCType(v['def'])))
-    
-    struct._fields_ = _fields_
-
-    # Update now its set
-    _allStructs[x['struct']] = struct
-
-    return struct
-
-
-class cstruct(object):
-    def __init__(self, struct, structType):
-        self.struct = struct
-        self.structType = structType
+    @property
+    def value(self):
+        return self
 
     def keys(self):
-        return self.structType['args'].keys()
+        return self._structType['args'].keys()
     
     def __getitem__(self, key):
         if not key in self.keys():
             raise KeyError
         
-        return getattr(self.struct, key)
+        if not hasattr(self._as_parameter_,key):
+            return None
+
+        return getattr(self._as_parameter_, key)
 
     def __setitem__(self, key, value):
         if not key in self.keys():
-            raise KeyError
-        
-        setattr(self.struct, key, value)
+            raise KeyError  
+
+        v = makeCType(self._structType['args'][key]['def'])
+        setattr(self._as_parameter_, key, v(value))
 
     def __iter__(self):
-        return self.structType['args'].keys()
+        return self.keys()
 
     def __contains__(self, key):
-        return key in self.structType['args'].keys()
+        return key in self.keys()
+
+    def in_dll(self, lib, name):
+        self._as_parameter_ = self._value.in_dll(lib, name)
+        return self
+
+    def set(self, value):
+        if not isinstance(value, dict):
+            raise ValueError("Can only set struct with dict")
+        
+        for k in value.keys():
+            self.__setitem__(k,value[k])
+
+    def from_param(self,obj):
+        return self._as_parameter_
+
+    def from_address(self, address):
+        return self._value.from_address(address)
+
+    def from_buffer(self, source, offset=0):
+        return self._value.from_buffer(source, offset)
+
+    def from_buffer_copy(self, source, offset=0):
+        return self._value.from_buffer_copy(source, offset)
+
+
+    def _makeStruct(self):
+        x = self._structType
+
+        # Make structure 
+        class struct(ctypes.Structure):
+            pass
+
+        # Put empty one in, first in case we have nested structs
+        _allStructs[self._name] = struct
+
+        # Struct members
+        args = self._structType['args']
+        _fields_ = []
+        for k,v in args.items():
+            _fields_.append((k,makeCType(v['def'])))
+        
+        struct._fields_ = _fields_
+
+        # Update now its set
+        _allStructs[self._name] = struct
+
+        return struct
+
+    def __dir__(self):
+        return list(self.keys())
