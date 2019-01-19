@@ -92,7 +92,6 @@ float structFunc2(test_struct * i5){
     return (*i5).b + 5.0;
 }
 
-
 int setStructS1(){
     ts1_1.a = 1;
     ts1_1.b = 5.0;
