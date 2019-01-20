@@ -1,5 +1,7 @@
 import ctypes
 import numpy as np
+import struct
+
 from .parsedwarf import parseDwarf
 
 
@@ -23,26 +25,26 @@ _dictCTypes = {
         ('char',1): ctypes.c_char,
         }
 
-_dictNpTypes = {
-        ('int',1): np.dtype('i1'),
-        ('int',2): np.dtype('i2'),
-        ('int',4): np.dtype('i4'),
-        ('int',8): np.dtype('i8'),
-
-        ('unsigned int',1): np.dtype('u1'),
-        ('unsigned int',2): np.dtype('u2'),
-        ('unsigned int',4): np.dtype('u4'),
-        ('unsigned int',8): np.dtype('u8'),
-
-        ('float',4): np.dtype('f4'),
+_dictStTypes = {
+        ('int',1): 'b',
+        ('int',2): 'h',
+        ('int',4): 'i',
+        ('int',8): 'q',
         
-        ('float',8): np.dtype('f8'),
-        ('double',8): np.dtype('f8'),
+        ('unsigned int',1): 'B',
+        ('unsigned int',2): 'H',
+        ('unsigned int',4): 'I',
+        ('unsigned int',8): 'Q',
+
+        ('float',4): 'f',
         
-        ('_Bool',1): np.dtype('?'),
+        ('float',8): 'd',
+        ('double',8): 'd',
+        
+        ('_Bool',1): '?',
+        ('char',1): 'c',
         }
 
-_allStructs = {}
 _allStructsBase = {}
 
 class cwrap(object):
@@ -74,14 +76,13 @@ class cwrap(object):
         self._funcs[name] = cfunc(self._lib, self._funcs[name], name)
 
     def _init_struct(self, name):
-        if not name in _allStructs:
-            _makeStruct(name, self._structs[name])
+        if name in self._var:
+            return
 
-        self._structs[name] = _allStructs[name]
-        # Now return an intilized version of the struct
+        # Insert struct into variable defintions so we unify
+        # access through cvar
+        self._var[name] = cvar(self._lib, self._structs[name], name)
 
-    def list_structs(self):
-        return self._structs.keys()
 
     def __getattr__(self, name):
         if name in self.__dict__:
@@ -97,7 +98,7 @@ class cwrap(object):
 
             elif '_structs' in self.__dict__ and name in self._structs:
                 self._init_struct(name)
-                return cvar(self._lib, _allStructs[name])           
+                return self._var[name]       
         
         return self.__dict__[name]
 
@@ -110,10 +111,6 @@ class cwrap(object):
                 self._init_var(name)
                 self._var[name].set(value)
                 return
-            elif '_structs' in self.__dict__ and name in self._structs:
-                self._init_struct(name)
-                self._struct[name].set(value)
-                return
         
         self.__dict__[name] = value
 
@@ -123,28 +120,28 @@ class cvar(object):
     def __init__(self, lib, var , name = None):
         self.lib = lib
         self.var = var['def']
-        self.__type = makeCType(self.var)
+        self._ctype = makeCType(self.var)
         self.name = name
         self._init = True
 
     def from_param(self,obj):
-        return self._type_(obj)
+        return self._ctype.from_param(obj)
 
     def from_address(self, address):
-        return self._type_.from_address(address)
+        return self._ctype.from_address(address)
 
     def from_buffer(self, source, offset=0):
-        return self._type_.from_buffer(source, offset)
+        return self._ctype.from_buffer(source, offset)
 
     def from_buffer_copy(self, source, offset=0):
-        return self._type_.from_buffer_copy(source, offset)
+        return self._ctype.from_buffer_copy(source, offset)
 
     def in_dll(self):
-        return self._type_.in_dll(self.lib, self.name)
+        return self._ctype.in_dll(self.lib, self.name)
 
     @property
     def value(self):
-        x = self.in_dll()
+        x = self._ctype.in_dll(self.lib, self.name)
         if x is None:
             return None
 
@@ -166,44 +163,37 @@ class cvar(object):
         if self.var['const']:
             raise AttributeError('Can not set const variable')
         else:
-            if hasattr(self._type_,'contents'):
-                t = makeCType(self.var,False)
-                self._type_(t(value))
+            if hasattr(self._ctype,'contents'):
+                self._ctype(value)
             else:
                 self.in_dll().value = value
 
+    @property
+    def _as_parameter_(self):
+        return self._ctype._as_parameter_
+
 
     def __getitem__(self, key):
-        if not self.var['struct']:
-            raise TypeError(str(self.__class__) + "object does not support item assignment")
-
-        v = self.value
-        if not hasattr(v,key):
-            return None
-
-        return getattr(v, key)
+        if self.var['struct']:
+            return self._ctype[key]
+        else:
+            raise TypeError('Not subscriptable')
 
     def __setitem__(self, key, value):
-        if not self.var['struct']:
-            raise TypeError(str(self.__class__) +"object does not support item assignment")
-
-        ref = self.value
-        if not hasattr(ref ,key):
-            raise KeyError  
-
-        v = makeCType(_allStructsBase[self.var['type']]['args'][key]['def'])
-        setattr(ref, key, v(value))
+        if self.var['struct']:
+            self._ctype[key] = value
+        else:
+            raise TypeError('Not subscriptable')
 
     def __contains__(self, key):
         if self.var['struct']:
-            return hasattr(self._type_,key)
+            return key in self._ctype
         else:
-            return False
+            raise TypeError('Not subscriptable')
 
-
-    @property
-    def _type_(self):
-        return self.__type
+    def __dir__(self):
+        if self.var['struct']:
+            return self._ctype.keys()
 
     def __repr__(self):
         return str(self.value)
@@ -372,9 +362,14 @@ class cfunc(object):
         if '_func' not in self.__dict__:
             self._init()
 
-        print(*args)
-        return self._func(*args)
+        a = []
+        for ain,atype in zip(args,self._args.values()):
+            if atype['def']['ptrs']:
+                a.append(make_pointer_argsvalues(ain, atype['def']))
+            else:
+                a.append(ain)
 
+        return self._func(*a)
 
 
 def makeCType(x,ptrs=True):
@@ -387,32 +382,116 @@ def makeCType(x,ptrs=True):
         pass
 
     if x['struct']:
-        name = x['type']
-        if not name in _allStructs:
-            _makeStruct(name,_allStructsBase[name])
-        res = _allStructs[name]
+        res = cstruct(_allStructsBase[x['type']])
 
-    if ptrs:
-        for i in range(x['ptrs']):
-            res = ctypes.POINTER(res) 
+    if ptrs and x['ptrs']>0:
+        res = make_pointer_argtypes(res, x)
 
     return res
 
 
-def _makeStruct(name, structType):
-    # Make structure 
-    class struct(ctypes.Structure):
-        pass
+def make_pointer_argtypes(value, cctype):
+    if cctype['ptrs']>0:
+        if cctype['struct']:
+            res = ctypes.POINTER(value._bufferType)
+            nptrs = cctype['ptrs'] - 1
+        else:
+            nptrs = cctype['ptrs']
+            res = value
+        
+        if nptrs > 0:
+            for i in range(nptrs):
+                res = ctypes.POINTER(res)  
 
-    # Put empty one in, first in case we have nested structs
-    _allStructs[name] = struct
+    return res
 
-    # Struct members
-    _fields_ = []
-    for k,v in structType['args'].items():
-        _fields_.append((k,makeCType(v['def'])))
-    
-    struct._fields_ = _fields_
+def make_pointer_argsvalues(value, cctype):
+    if cctype['ptrs']>0:
+        if cctype['struct']:
+            res = ctypes.pointer(value._ctype._buffer)
+            nptrs = cctype['ptrs'] - 1
+        else:
+            nptrs = cctype['ptrs']
+            res = value
+        
+        if nptrs > 0:
+            for i in range(nptrs):
+                res = ctypes.pointer(res)  
 
-    # Update now its set
-    _allStructs[name] = struct
+    return res
+
+
+class cstruct(ctypes.Structure):
+    def __init__(self, structType):
+        self._structType = structType
+        self._args = self._structType['args']
+
+        self._bufferType = ctypes.c_char * structType['def']['size']
+        self._buffer = self._bufferType()
+        self._init = True
+
+    def __getitem__(self, key):
+        if not key in self.keys():
+            raise KeyError("No key "+str(key))
+
+        return self._unpack(key)
+        
+
+    def __setitem__(self, key, value):
+        if not key in self.keys():
+            raise KeyError("No key "+str(key))
+
+        self._pack(key, value)
+
+    def _parseArg(self, key):
+        arg = self._args[key]
+        abytes = b''
+
+        start = arg['loc'] 
+        adef =  arg['def']
+        end = start + adef['size']
+
+        if adef['struct'] or adef['union']:
+            pass
+        
+        if adef['array']:
+            pass
+        
+        if adef['ptrs'] > 0:
+            pass
+
+        typeTuple = (adef['type'],adef['size'])
+        sc = ''
+        if typeTuple in _dictStTypes:
+            sc = '@'+_dictStTypes[typeTuple]
+
+        return start, end, sc
+
+    def _unpack(self, key):
+        start, end, sc = self._parseArg(key)
+        return struct.unpack(sc, self._buffer[start:end])[0]
+
+    def _pack(self, key, value):
+        start, end, sc = self._parseArg(key)
+        struct.pack_into(sc, self._buffer, start, value)
+
+    def keys(self):
+        return self._args.keys()
+
+    def __contains__(self,key):
+        return key in self.keys()
+
+    def __dir__(self):
+        return self.keys()
+
+
+    def from_param(self, obj):
+        return self._buffer
+
+    def in_dll(self, lib, name):
+        self._buffer = self._bufferType.in_dll(lib,name)
+        return self._buffer
+
+    @property
+    def _as_parameter_(self):
+        return self._buffer
