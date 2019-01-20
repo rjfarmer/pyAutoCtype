@@ -124,6 +124,9 @@ class cvar(object):
         self.name = name
         self._init = True
 
+        if self.name is not None:
+            self.in_dll()
+
     def from_param(self,obj):
         return self._ctype.from_param(obj)
 
@@ -489,7 +492,10 @@ class cstruct(ctypes.Structure):
         return self._buffer
 
     def in_dll(self, lib, name):
-        self._buffer = self._bufferType.in_dll(lib,name)
+        try:
+            self._buffer = self._bufferType.in_dll(lib,name)
+        except ValueError:
+            pass
         return self._buffer
 
     @property

@@ -100,9 +100,10 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(y, 1)        
 
     def test_structFunc1(self):
-        #y = x.test_struct
+        y = x.test_struct
 
-        y = {'a':1,'b':3}
+        y['a'] = 1
+        y['b'] = 3.0
         z = x.structFunc1(y)
         self.assertEqual(z,y['b']+5.0)
 
