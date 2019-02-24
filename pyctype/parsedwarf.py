@@ -132,6 +132,8 @@ def parseType(DIE, child):
         try:
             if child.attributes['DW_AT_type'].value in DIE:
                 child = DIE[child.attributes['DW_AT_type'].value]
+            else:
+                break
         except KeyError:
             break
 
