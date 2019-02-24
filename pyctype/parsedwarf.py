@@ -66,6 +66,8 @@ def getAttr(DIE):
             res['array'] = attr.value
         if attr.name == 'DIE DW_TAG_pointer_type':
             res['ptr'] = True
+        if attr.name == 'DW_AT_linkage_name':
+            res['linkage_name'] = attr.value
             
     return res
 
