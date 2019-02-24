@@ -161,6 +161,8 @@ def parseDIE(DIEs):
 
     bt2 = set(['DW_TAG_typedef', 'DW_TAG_union_type'])
 
+    noname_counter = 1
+
     for key,value in DIEs.items():
         if value.tag == "DW_TAG_subprogram":
             x = getAttr(value) 
@@ -169,11 +171,20 @@ def parseDIE(DIEs):
             funcs[n]['args'] = OrderedDict()
             for j in value.iter_children():
                 x2 = getAttr(j)
-                funcs[n]['args'][x2['name']] = x2
+                if 'name' not in x2:
+                    name = 'NONAME%04d' % noname_counter
+                    noname_counter += 1
+                else:
+                    name = x2['name']
+                funcs[n]['args'][name] = x2
         if value.tag == "DW_TAG_variable":
             x = getAttr(value)
-            n = x['name']
-            var[n] = x
+            if 'name' not in x:
+                name = 'NONAME%04d' % noname_counter
+                noname_counter += 1
+            else:
+                name = x['name']
+            var[name] = x
         if value.tag in bt:
             x = getAttr(value)
             base_type[x['offset']] = x
